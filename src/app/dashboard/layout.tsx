@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
+import { syncUser } from "@/actions/user"
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,9 @@ export default async function DashboardLayout({
   if (!userId) {
     redirect("/sign-in");
   }
+
+  // Ensure user exists in our local database
+  await syncUser();
 
   return (
     <SidebarProvider>
