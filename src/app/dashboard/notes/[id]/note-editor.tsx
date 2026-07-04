@@ -41,7 +41,6 @@ export function NoteEditor({ initialNote, subjects }: { initialNote: Note, subje
     });
   }, [title, content, isPinned, subjectId, initialNote.id]);
 
-  // Auto-save debouncer
   useEffect(() => {
     const timer = setTimeout(() => {
       if (
@@ -68,7 +67,6 @@ export function NoteEditor({ initialNote, subjects }: { initialNote: Note, subje
 
   return (
     <div className="flex flex-col h-full glass-card overflow-hidden">
-      {/* Editor Header */}
       <div className="border-b border-border/50 p-4 flex items-center justify-between bg-background/50">
         <div className="flex-1 max-w-2xl flex items-center gap-4">
           <Input
@@ -127,7 +125,6 @@ export function NoteEditor({ initialNote, subjects }: { initialNote: Note, subje
         </div>
       </div>
 
-      {/* Editor Body */}
       <div className="flex-1 p-0 flex flex-col">
         <Textarea
           value={content}

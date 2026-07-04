@@ -3,12 +3,14 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
 }
 
 model User {
@@ -24,6 +26,7 @@ model User {
   notes     Note[]
   subjects  Subject[]
   tasks     Task[]
+  pdfs      Pdf[]
 }
 
 model Subject {
@@ -37,6 +40,7 @@ model Subject {
 
   notes       Note[]
   tasks       Task[]
+  pdfs        Pdf[]
 }
 
 model Folder {
@@ -56,7 +60,7 @@ model Folder {
 model Note {
   id          String   @id @default(cuid())
   title       String
-  content     String?  // Rich text or markdown content
+  content     String?
   isPinned    Boolean  @default(false)
   isFavorite  Boolean  @default(false)
   userId      String
@@ -82,4 +86,44 @@ model Task {
   subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// --------------------------------------------------
+// AI & PDF Models
+// --------------------------------------------------
+
+model Pdf {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  key         String   @unique // UploadThing file key
+  size        Int
+  status      String   @default("processing") // processing, ready, failed
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chunks      DocumentChunk[]
+  messages    Message[]
+}
+
+// Ensure the vector length is defined correctly for OpenAI text-embedding-3-small (1536 dims)
+model DocumentChunk {
+  id        String                 @id @default(cuid())
+  content   String
+  embedding Unsupported("vector(1536)")?
+  pdfId     String
+  pdf       Pdf                    @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  role      String   // 'user' | 'assistant'
+  content   String
+  pdfId     String
+  pdf       Pdf      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
