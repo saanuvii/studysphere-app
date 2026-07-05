@@ -43,12 +43,9 @@ export default async function LibraryPage() {
                     {(pdf.size / 1024 / 1024).toFixed(2)} MB • Uploaded {formatDistanceToNow(new Date(pdf.createdAt), { addSuffix: true })}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                   <form action={async () => {
-                    "use server";
-                    await deletePdf(pdf.id);
-                  }}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title="Delete PDF">
+                <div className="flex flex-col items-end gap-2 relative z-20">
+                   <form action={deletePdf.bind(null, pdf.id)}>
+                    <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Delete PDF">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </form>

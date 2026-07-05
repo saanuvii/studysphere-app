@@ -17,14 +17,14 @@ export async function processPdfForRag(pdfId: string, pdfUrl: string) {
 
     console.log("PDF downloaded successfully. Extracting text...");
 
-    // 2. Use Langchain's PDFLoader (Node environment wrapper for pdf-parse)
+    // 2. Use Langchain's PDFLoader
     const loader = new PDFLoader(blob, {
       splitPages: false,
     });
     const docs = await loader.load();
 
-    // Combine all pages into one string
-    const textContent = docs.map(doc => doc.pageContent).join("\n\n");
+    // Combine all pages into one string and clean up excessive whitespace
+    const textContent = docs.map(doc => doc.pageContent).join("\n\n").replace(/\s+/g, " ");
 
     if (!textContent || textContent.trim() === "") {
       throw new Error("No text content extracted from PDF");
@@ -40,25 +40,41 @@ export async function processPdfForRag(pdfId: string, pdfUrl: string) {
 
     const chunks = await textSplitter.createDocuments([textContent]);
 
-    console.log(`Created ${chunks.length} chunks. Generating embeddings...`);
+    // Filter out empty chunks to prevent API errors
+    const validChunks = chunks.filter(c => c.pageContent && c.pageContent.trim().length > 5);
+    console.log(`Created ${validChunks.length} valid chunks. Generating embeddings...`);
 
     // 4. Initialize Langchain Google GenAI Embeddings
     const embeddings = new GoogleGenerativeAIEmbeddings({
-      modelName: "text-embedding-004", // Latest Google embedding model
+      modelName: "text-embedding-004", // Google Gemini 768-dim model
       apiKey: process.env.GEMINI_API_KEY,
     });
 
-    const chunkTexts = chunks.map((chunk) => chunk.pageContent);
+    const chunkTexts = validChunks.map((chunk) => chunk.pageContent);
 
     // 5. Generate embeddings via Google Gemini
     const embeddingsArray = await embeddings.embedDocuments(chunkTexts);
 
     console.log("Embeddings generated successfully. Saving to database...");
 
+    // Force vector dimensions if Prisma failed to sync the type change previously
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "DocumentChunk" ALTER COLUMN embedding TYPE vector(768);`);
+    } catch (e) {
+      // Ignore if it's already correct
+    }
+
     // 6. Save each chunk and its embedding to the Database
-    for (let i = 0; i < chunks.length; i++) {
+    let savedCount = 0;
+    for (let i = 0; i < validChunks.length; i++) {
       const content = chunkTexts[i];
       const embedding = embeddingsArray[i];
+
+      // Safe check: skip empty/invalid embeddings which crash pgvector
+      if (!embedding || embedding.length === 0 || embedding.length !== 768) {
+         console.warn(`Skipping chunk ${i} due to invalid embedding dimension: ${embedding?.length}`);
+         continue;
+      }
 
       const vectorString = `[${embedding.join(",")}]`;
 
@@ -69,9 +85,10 @@ export async function processPdfForRag(pdfId: string, pdfUrl: string) {
         vectorString,
         pdfId
       );
+      savedCount++;
     }
 
-    console.log("Database updated successfully.");
+    console.log(`Database updated successfully. Saved ${savedCount} chunks.`);
 
     // 7. Update PDF status to ready
     await prisma.pdf.update({
