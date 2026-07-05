@@ -110,11 +110,11 @@ model Pdf {
   messages    Message[]
 }
 
-// Ensure the vector length is defined correctly for OpenAI text-embedding-3-small (1536 dims)
+// Ensure the vector length is defined correctly for Google text-embedding-004 (768 dims)
 model DocumentChunk {
   id        String                 @id @default(cuid())
   content   String
-  embedding Unsupported("vector(1536)")?
+  embedding Unsupported("vector(768)")?
   pdfId     String
   pdf       Pdf                    @relation(fields: [pdfId], references: [id], onDelete: Cascade)
 }

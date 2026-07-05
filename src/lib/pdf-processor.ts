@@ -1,4 +1,4 @@
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { prisma } from "./prisma";
@@ -42,15 +42,15 @@ export async function processPdfForRag(pdfId: string, pdfUrl: string) {
 
     console.log(`Created ${chunks.length} chunks. Generating embeddings...`);
 
-    // 4. Initialize Langchain OpenAI Embeddings
-    const embeddings = new OpenAIEmbeddings({
-      modelName: "text-embedding-3-small",
-      openAIApiKey: process.env.OPENAI_API_KEY,
+    // 4. Initialize Langchain Google GenAI Embeddings
+    const embeddings = new GoogleGenerativeAIEmbeddings({
+      modelName: "text-embedding-004", // Latest Google embedding model
+      apiKey: process.env.GEMINI_API_KEY,
     });
 
     const chunkTexts = chunks.map((chunk) => chunk.pageContent);
 
-    // 5. Generate embeddings via OpenAI
+    // 5. Generate embeddings via Google Gemini
     const embeddingsArray = await embeddings.embedDocuments(chunkTexts);
 
     console.log("Embeddings generated successfully. Saving to database...");

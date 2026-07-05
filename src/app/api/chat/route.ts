@@ -1,7 +1,7 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { prisma } from "@/lib/prisma";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { getDbUserId } from "@/actions/user";
 
 export async function POST(req: Request) {
@@ -16,14 +16,15 @@ export async function POST(req: Request) {
       return new Response("Missing pdfId", { status: 400 });
     }
 
-    const embeddings = new OpenAIEmbeddings({
-      modelName: "text-embedding-3-small",
-      openAIApiKey: process.env.OPENAI_API_KEY,
+    const embeddings = new GoogleGenerativeAIEmbeddings({
+      modelName: "text-embedding-004",
+      apiKey: process.env.GEMINI_API_KEY,
     });
 
     const queryEmbedding = await embeddings.embedQuery(lastMessage.content);
     const vectorString = `[${queryEmbedding.join(",")}]`;
 
+    // Perform vector similarity search in pgvector using inner product (<#>) or cosine distance (<=>)
     const relevantChunks: Array<{ id: string; content: string }> = await prisma.$queryRawUnsafe(`
       SELECT id, content
       FROM "DocumentChunk"
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     `;
 
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: google("gemini-1.5-flash"),
       system: systemPrompt,
       messages: messages,
       async onFinish({ text }) {
