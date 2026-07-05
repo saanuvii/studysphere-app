@@ -1,6 +1,6 @@
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { prisma } from "./prisma";
 
 export async function processPdfForRag(pdfId: string, pdfUrl: string) {
@@ -17,9 +17,10 @@ export async function processPdfForRag(pdfId: string, pdfUrl: string) {
 
     console.log("PDF downloaded successfully. Extracting text...");
 
-    // 2. Use Langchain's WebPDFLoader which uses PDF.js internally and is much safer
-    // in Web/Next.js/Turbopack environments than node-native `pdf-parse`
-    const loader = new WebPDFLoader(blob);
+    // 2. Use Langchain's PDFLoader (Node environment wrapper for pdf-parse)
+    const loader = new PDFLoader(blob, {
+      splitPages: false,
+    });
     const docs = await loader.load();
 
     // Combine all pages into one string

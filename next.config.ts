@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Exclude node-native canvas since WebPDFLoader handles it natively
-  serverExternalPackages: [],
+  // Required so Turbopack does not attempt to statically trace dynamic CommonJS imports in pdf-parse
+  serverExternalPackages: ["pdf-parse"],
 };
 
 export default nextConfig;
