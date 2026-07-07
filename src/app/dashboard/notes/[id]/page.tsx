@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 
-export default async function NotePage({ params }: { params: { id: string } }) {
-  const note = await getNote(params.id);
+// In Next.js 15, params is an async Promise
+export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const note = await getNote(resolvedParams.id);
   const subjects = await getSubjects();
 
   if (!note) {

@@ -10,16 +10,11 @@ import {
   GraduationCap,
   LayoutDashboard,
   MessageSquare,
-
   Target,
   BarChart,
-
-  Moon,
-  Sun
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useTheme } from "next-themes"
 
 import {
   Sidebar,
@@ -35,7 +30,6 @@ import {
   SidebarGroupContent,
 } from "@/components/ui/sidebar"
 import { UserButton } from "@clerk/nextjs"
-import { Button } from "@/components/ui/button"
 
 const mainNavItems = [
   {
@@ -95,7 +89,6 @@ const studyItems = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  const { setTheme, theme } = useTheme()
 
   return (
     <Sidebar collapsible="icon" {...props} className="border-r border-border/40 bg-sidebar/95 backdrop-blur">
@@ -155,17 +148,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2 p-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-full flex justify-start gap-2 px-2"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="group-data-[collapsible=icon]:hidden">Toggle Theme</span>
-          </Button>
-        </div>
         <div className="p-2 flex items-center justify-between group-data-[collapsible=icon]:justify-center">
           <div className="group-data-[collapsible=icon]:hidden">
             <UserButton />

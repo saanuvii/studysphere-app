@@ -4,13 +4,17 @@ import { Book } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+// In Next.js 15, searchParams is an async Promise
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: { pdfId?: string };
+  searchParams: Promise<{ pdfId?: string }>;
 }) {
   const pdfs = await getPdfs();
-  const activePdfId = searchParams.pdfId;
+
+  // Await the params
+  const resolvedParams = await searchParams;
+  const activePdfId = resolvedParams.pdfId;
 
   const readyPdfs = pdfs.filter(p => p.status === "ready");
   const activePdf = readyPdfs.find(p => p.id === activePdfId);

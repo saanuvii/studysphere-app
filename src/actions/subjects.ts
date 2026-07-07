@@ -27,8 +27,7 @@ export async function createSubject(name: string, color: string) {
     },
   });
 
-  revalidatePath("/dashboard/subjects");
-  revalidatePath("/dashboard/notes");
+  revalidatePath("/dashboard", "layout");
   return subject;
 }
 
@@ -38,5 +37,5 @@ export async function deleteSubject(id: string) {
     where: { id, userId },
   });
 
-  revalidatePath("/dashboard/subjects");
+  revalidatePath("/dashboard", "layout");
 }
