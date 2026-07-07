@@ -1,17 +1,19 @@
-import { getPdfs } from "@/actions/pdfs";
+import { getPdfs, deletePdf } from "@/actions/pdfs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Loader2, Trash2 } from "lucide-react";
+import { Book, Loader2 } from "lucide-react";
 import { UploadPdfDialog } from "./upload-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { deletePdf } from "@/actions/pdfs";
+import { DeleteButton } from "@/components/dashboard/delete-button";
+import { AutoRefreshProcessor } from "./auto-refresh";
 
 export default async function LibraryPage() {
   const pdfs = await getPdfs();
+  const hasProcessing = pdfs.some(p => p.status === "processing");
 
   return (
     <div className="flex flex-col gap-6">
+      {hasProcessing && <AutoRefreshProcessor />}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">PDF Library</h1>
@@ -44,11 +46,10 @@ export default async function LibraryPage() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2 relative z-20">
-                   <form action={deletePdf.bind(null, pdf.id)}>
-                    <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Delete PDF">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </form>
+                  <DeleteButton onDelete={async () => {
+                    "use server";
+                    await deletePdf(pdf.id);
+                  }} />
                 </div>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col justify-end">

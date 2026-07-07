@@ -1,8 +1,9 @@
 import { getSubjects, deleteSubject } from "@/actions/subjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderOpen, FileText, CheckSquare, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, FileText, CheckSquare, Plus } from "lucide-react";
 import { SubjectForm } from "./subject-form";
 import { Button } from "@/components/ui/button";
+import { DeleteButton } from "@/components/dashboard/delete-button";
 
 export default async function SubjectsPage() {
   const subjects = await getSubjects();
@@ -42,11 +43,12 @@ export default async function SubjectsPage() {
               />
               <CardHeader className="pb-2 pt-6 flex flex-row items-start justify-between space-y-0">
                 <CardTitle className="text-xl font-bold">{subject.name}</CardTitle>
-                <form action={deleteSubject.bind(null, subject.id)} className="relative z-20">
-                  <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-20" title="Delete subject">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </form>
+                <div className="relative z-20">
+                  <DeleteButton onDelete={async () => {
+                    "use server";
+                    await deleteSubject(subject.id);
+                  }} />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-4">

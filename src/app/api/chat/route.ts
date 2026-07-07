@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const queryEmbedding = await embeddings.embedQuery(lastMessage.content);
     const vectorString = `[${queryEmbedding.join(",")}]`;
 
-    // Perform vector similarity search in pgvector using inner product (<#>) or cosine distance (<=>)
+    // Perform vector similarity search in pgvector using cosine distance (<=>)
     const relevantChunks: Array<{ id: string; content: string }> = await prisma.$queryRawUnsafe(`
       SELECT id, content
       FROM "DocumentChunk"
@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       }
     });
 
+    // Use toDataStreamResponse which is standard for newer ai versions interacting with useChat
     return result.toTextStreamResponse();
 
   } catch (error) {
