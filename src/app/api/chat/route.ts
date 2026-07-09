@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: google("gemini-1.5-flash"),
       system: systemPrompt,
-      messages: messages,
+      messages: messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),
       async onFinish({ text }) {
         try {
           await prisma.message.createMany({
@@ -65,7 +65,6 @@ export async function POST(req: Request) {
       }
     });
 
-    // Use toDataStreamResponse which is standard for newer ai versions interacting with useChat
     return result.toTextStreamResponse();
 
   } catch (error) {

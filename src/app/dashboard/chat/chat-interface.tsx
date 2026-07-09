@@ -1,6 +1,5 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,20 +7,16 @@ import { Send, User, Bot, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
 
+type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
 export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: string }) {
-  // Pass configuration via explicit cast to generic to bypass SDK version issues
-  const config = {
-    api: "/api/chat",
-    body: { pdfId },
-  } as Record<string, unknown>;
-
-  const chatObj = useChat(config) as Record<string, unknown>;
-  const messages = chatObj.messages as Array<{ id: string, role: string, content: string }>;
-  const isLoading = chatObj.isLoading as boolean;
-  const input = chatObj.input as string;
-  const handleInputChange = chatObj.handleInputChange as (e: React.ChangeEvent<HTMLInputElement>) => void;
-  const handleSubmit = chatObj.handleSubmit as (e: React.FormEvent) => void;
-
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,6 +24,72 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: input.trim(),
+    };
+
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages,
+          pdfId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch response");
+      }
+
+      // Add a placeholder assistant message
+      const assistantMessageId = (Date.now() + 1).toString();
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantMessageId, role: "assistant", content: "" },
+      ]);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Chat Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), role: "assistant", content: "Sorry, I encountered an error processing your request." },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-background/50">
@@ -40,7 +101,7 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
       </div>
 
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        {messages?.length === 0 ? (
+        {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 mt-12">
             <Bot className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-muted-foreground">
@@ -49,7 +110,7 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
           </div>
         ) : (
           <div className="flex flex-col gap-6 pb-4">
-            {messages?.map((m: { id: string, role: string, content: string }) => (
+            {messages.map((m) => (
               <div
                 key={m.id}
                 className={`flex gap-3 max-w-[85%] ${
@@ -78,7 +139,7 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
                 </div>
               </div>
             ))}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex gap-3 max-w-[85%] mr-auto">
                 <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-muted text-muted-foreground border border-border">
                   <Bot size={14} />
@@ -100,7 +161,7 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
         >
           <Input
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Ask something about this document..."
             className="flex-1 bg-background/50 border-border/50 pr-12 h-12 rounded-full focus-visible:ring-primary/20"
             disabled={isLoading}
@@ -108,10 +169,10 @@ export function ChatInterface({ pdfId, pdfName }: { pdfId: string; pdfName: stri
           <Button
             type="submit"
             size="icon"
-            disabled={isLoading || !input?.trim?.()}
-            className="absolute right-1.5 h-9 w-9 rounded-full bg-primary hover:bg-primary/90 transition-transform active:scale-95"
+            disabled={isLoading || !input.trim()}
+            className="absolute right-1.5 h-9 w-9 rounded-full bg-primary hover:bg-primary/90 transition-transform active:scale-95 disabled:opacity-50"
           >
-            <Send className="h-4 w-4" />
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
       </div>
